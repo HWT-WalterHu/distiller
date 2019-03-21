@@ -74,7 +74,9 @@ import examples.automated_deep_compression as adc
 from distiller.models import ALL_MODEL_NAMES, create_model
 import parser
 import operator
+import tqdm
 
+# print(torch.__version__)
 
 # Logger handle
 msglogger = None
@@ -246,7 +248,7 @@ def main():
                        ' | '.join(['{:.2f}'.format(val) for val in dlw]))
         msglogger.info('\tStarting from Epoch: %s', args.kd_start_epoch)
 
-    for epoch in range(start_epoch, start_epoch + args.epochs):
+    for epoch in tqdm.tqdm(range(start_epoch, start_epoch + args.epochs)):
         # This is the main training loop.
         msglogger.info('\n')
         if compression_scheduler:

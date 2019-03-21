@@ -7,7 +7,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 import distiller
 
- 
+
 def get_test_tensor():
     return torch.tensor([[1.0, 2.0, 3.0],
                          [4.0, 5.0, 6.0],

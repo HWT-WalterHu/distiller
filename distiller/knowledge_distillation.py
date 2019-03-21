@@ -84,7 +84,7 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
         (https://arxiv.org/abs/1711.05852)
 
     """
-    def __init__(self, student_model, teacher_model, temperature=1.0,
+    def __init__(self, student_model, teacher_model, head,teacher_head, temperature=1.0,
                  loss_weights=DistillationLossWeights(0.5, 0.5, 0)):
         super(KnowledgeDistillationPolicy, self).__init__()
 
@@ -95,14 +95,16 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
         self.active = False
 
         self.student = student_model
+        self.head = head
         self.teacher = teacher_model
+        self.teacher_head = teacher_head
         self.temperature = temperature
         self.loss_wts = loss_weights
 
         self.last_students_logits = None
         self.last_teacher_logits = None
 
-    def forward(self, *inputs):
+    def forward(self, target, *inputs,):
         """
         Performs forward propagation through both student and teached models and caches the logits.
         This function MUST be used instead of calling the student model directly.
@@ -111,15 +113,15 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
             The student model's returned output, to be consistent with what a script using this would expect
         """
         if not self.active:
-            return self.student(*inputs)
+            return self.head(self.student(*inputs), target)
 
         if self.loss_wts.teacher == 0:
             with torch.no_grad():
-                self.last_teacher_logits = self.teacher(*inputs)
+                self.last_teacher_logits = self.teacher_head(self.teacher(*inputs),target)
         else:
-            self.last_teacher_logits = self.teacher(*inputs)
+            self.last_teacher_logits = self.teacher_head(self.teacher(*inputs),target)
 
-        out = self.student(*inputs)
+        out = self.head(self.student(*inputs), target)
         self.last_students_logits = out.new_tensor(out, requires_grad=True)
 
         return out

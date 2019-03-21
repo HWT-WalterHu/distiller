@@ -508,6 +508,10 @@ def log_activation_statsitics(epoch, phase, loggers, collector):
     for logger in loggers:
         logger.log_activation_statsitic(phase, collector.stat_name, collector.value(), epoch)
 
+def log_eval_stasitics(stats_dict, steps, loggers):
+    for logger in loggers:
+        logger.log_eval_statsitic(stats_dict, steps)
+
 
 def log_weights_sparsity(model, epoch, loggers):
     """Log information about the weights sparsity"""

@@ -45,6 +45,6 @@ class Simplenet(nn.Module):
         return x
 
 
-def simplenet_cifar():
+def simplenet_cifar(pretrianed = False):
     model = Simplenet()
     return model

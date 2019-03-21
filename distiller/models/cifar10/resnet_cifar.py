@@ -34,8 +34,11 @@ This ResNet also has layer gates, to be able to dynamically remove layers.
 }
 
 """
+
+
 import torch.nn as nn
 import math
+import torch
 import torch.utils.model_zoo as model_zoo
 
 
@@ -148,8 +151,15 @@ class ResNetCifar(nn.Module):
         return x
 
 
-def resnet20_cifar(**kwargs):
+def resnet20_cifar(pretrained=False, **kwargs):
     model = ResNetCifar(BasicBlock, [3, 3, 3], **kwargs)
+    if pretrained:
+        print("load pretrained resnet 20")
+        ckp = torch.load('/home/hwt/pyprojects/distiller/examples/classifier_compression/logs/trainR20_slr___2019.03.13-170800/trainR20_slr_best.pth.tar')
+        dic = ckp['state_dict'].copy()
+        for k in ckp['state_dict']:
+            dic[k.replace('module.','')] = dic.pop(k)
+        model.load_state_dict(dic)
     return model
 
 def resnet32_cifar(**kwargs):

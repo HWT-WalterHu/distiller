@@ -124,6 +124,12 @@ class TensorBoardLogger(DataLogger):
             self.tblogger.scalar_summary(group+tag, value, epoch)
         self.tblogger.sync_to_file()
 
+    def log_eval_statsitic(self, stats_dict, steps):
+        group = 'Evaluate/'
+        for tag, value in stats_dict.items():
+            self.tblogger.scalar_summary(group+tag, value, steps)
+        self.tblogger.sync_to_file()
+
     def log_weights_sparsity(self, model, epoch):
         params_size = 0
         sparse_params_size = 0
