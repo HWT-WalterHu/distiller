@@ -373,7 +373,6 @@ class SVG_softmax(Arcface):
         output *= self.s  # scale up in order to make softmax work, first introduced in normface
         return output
 
-
 #################################SVG-Softmax Use ArcMargin on rest vecotr space  ######################
 ############    replace  angular margin with original SVG margin for unlabeled space vector  ##########
 ##########################################      Based on ArcFace     ##################################
@@ -551,9 +550,3 @@ class sphere_plusLoss(Module):
             print("single or among or ldist type..")
 
         return inter_class_loss
-
-
-
-
-
-

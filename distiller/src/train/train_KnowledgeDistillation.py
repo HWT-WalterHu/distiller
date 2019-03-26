@@ -73,8 +73,8 @@ class TrainKnowledgeDistill(TrainBase):
             model = model_map[net_mode](self.conf.embedding_size, height, width).to(self.conf.device)
 
         elif net_mode.find("ResNet") >=0:
-            assert self.conf.input_size[0] == self.conf.input_size[1]
-            model = model_map[net_mode](self.conf.input_size[0]).to(self.conf.device)
+            # assert self.conf.input_size[0] == self.conf.input_size[1]
+            model = model_map[net_mode]((self.conf.input_size[0],self.conf.input_size[1])).to(self.conf.device)
         else:
             model = model_map[net_mode](self.conf.embedding_size).to(self.conf.device)
         self.teacher = model
@@ -137,7 +137,7 @@ class TrainKnowledgeDistill(TrainBase):
         # to refer to past experiment executions and this information may be useful.
         apputils.log_execution_env_state(args.compress, msglogger.logdir, gitroot=module_path)
         msglogger.debug("Distiller: %s", distiller.__version__)
-        start_epoch = 0
+        start_epoch = self.start_epoch
         perf_scores_history = []
         if args.deterministic:
             # Experiment reproducibility is sometimes important.  Pete Warden expounded about this
@@ -273,7 +273,7 @@ class TrainKnowledgeDistill(TrainBase):
                            ' | '.join(['{:.2f}'.format(val) for val in dlw]))
             msglogger.info('\tStarting from Epoch: %s', args.kd_start_epoch)
 
-        for epoch in (range(start_epoch, start_epoch + args.epochs)):
+        for epoch in (range(start_epoch, self.conf.epochs)):
             # if epoch == start_epoch:
             #     self.writer = SummaryWriter(self.conf.log_path)
             # #     # write graps in to tensorboard
@@ -282,6 +282,7 @@ class TrainKnowledgeDistill(TrainBase):
             #
             # This is the main training loop.
             msglogger.info('\n')
+            print("epoch %s started:\n"%epoch)
             if compression_scheduler:
                 compression_scheduler.on_epoch_begin(epoch)
 
@@ -331,7 +332,7 @@ class TrainKnowledgeDistill(TrainBase):
         model.train()
         acc_stats = []
         end = time.time()
-        train_step = 0
+        # train_step = 0
         for (inputs, target) in tqdm.tqdm((train_loader)):
             if self.step % self.evaluate_every == 0 and self.step != 0:
                 time_stamp = get_time()
@@ -340,14 +341,13 @@ class TrainKnowledgeDistill(TrainBase):
                 distiller.log_eval_stasitics(accuracy,self.step,loggers[:1])
                 # self.model.train()
                 self.save_state(accuracy, time_stamp, extra=self.conf.job_name)
-            self.step += 1
             # Measure data loading time
             data_time.add(time.time() - end)
             inputs, target = inputs.to(args.device), target.to(args.device)
 
             # Execute the forward phase, compute the output and measure loss
             if compression_scheduler:
-                compression_scheduler.on_minibatch_begin(epoch, train_step, steps_per_epoch, optimizer)
+                compression_scheduler.on_minibatch_begin(epoch, self.step, steps_per_epoch, optimizer)
 
             if not hasattr(args, 'kd_policy') or args.kd_policy is None:
                 embedding = model(inputs)
@@ -368,7 +368,7 @@ class TrainKnowledgeDistill(TrainBase):
             if compression_scheduler:
                 # Before running the backward phase, we allow the scheduler to modify the loss
                 # (e.g. add regularization loss)
-                agg_loss = compression_scheduler.before_backward_pass(epoch, train_step, steps_per_epoch, loss,
+                agg_loss = compression_scheduler.before_backward_pass(epoch, self.step, steps_per_epoch, loss,
                                                                       optimizer=optimizer, return_loss_components=True)
                 loss = agg_loss.overall_loss
                 losses[OVERALL_LOSS_KEY].add(loss.item())
@@ -385,11 +385,11 @@ class TrainKnowledgeDistill(TrainBase):
             loss.backward()
             optimizer.step()
             if compression_scheduler:
-                compression_scheduler.on_minibatch_end(epoch, train_step, steps_per_epoch, optimizer)
+                compression_scheduler.on_minibatch_end(epoch, self.step, steps_per_epoch, optimizer)
 
             # measure elapsed time
             batch_time.add(time.time() - end)
-            steps_completed = (train_step + 1)
+            steps_completed = (self.step%steps_per_epoch + 1)
             if steps_completed % args.print_freq == 0:
             #     # Log some statistics
 
@@ -417,8 +417,11 @@ class TrainKnowledgeDistill(TrainBase):
                                                 epoch, steps_completed,
                                                 steps_per_epoch, args.print_freq,
                                                 loggers)
+                losses = OrderedDict([(OVERALL_LOSS_KEY, tnt.AverageValueMeter()),
+                                      (OBJECTIVE_LOSS_KEY, tnt.AverageValueMeter())])
+                classerr = tnt.ClassErrorMeter(accuracy=True, topk=(1, 5))
             end = time.time()
-            train_step += 1
+            self.step += 1
         return acc_stats
 
     def update_training_scores_history(self,perf_scores_history, model, top1, top5, epoch, num_best_scores):

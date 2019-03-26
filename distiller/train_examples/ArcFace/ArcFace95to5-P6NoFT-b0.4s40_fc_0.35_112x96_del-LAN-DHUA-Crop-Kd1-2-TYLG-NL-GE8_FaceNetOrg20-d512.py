@@ -27,12 +27,12 @@ global msglogger
 def train(device_ids, resume_training, args):
     current_time = datetime.now().strftime('%b%d_%H-%M-%S')
     conf = edict()
-    conf.lr = 1e-1
+    conf.lr = 0.03162
     conf.batch_size = 256 #
     # conf.gamma = 0.1
     # conf.milestones = [8, 15, 25]  # down learing rate
     conf.gamma = 0.3162
-    conf.milestones = [5, 15, 20]  # down learing rate
+    conf.milestones = [1, 5, 15, 20]  # down learing rate
     conf.epochs = 22
     conf.momentum = 0.9
     conf.pin_memory = True
@@ -57,8 +57,8 @@ def train(device_ids, resume_training, args):
     #conf.remove_layer_name = ['linear', 'bn']
     conf.remove_layer_name = []
     conf.ignore_layer = []
-    conf.fintune_model_path =None
-    #conf.fintune_model_path = None
+    conf.fintune_model_path = None
+    # conf.fintune_model_path = '/media/hwt/492c0a80-02ce-45ac-9297-63ce30dfdd81/home/minivision/Project/pytorch_models/FaceRecognition/finetune_models/2019-01-13-14-41_ArcFace95to5-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNetOrg20-d512_model_iter-177500_Bus-0.9458_XCH-0.9749/2019-01-13-14-41_ArcFace95to5-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNetOrg20-d512_model_iter-177500_Bus-0.9458_XCH-0.9749.pth'
     conf.resume_training = resume_training
     conf.opt_prefix = None
 
@@ -107,24 +107,24 @@ def train(device_ids, resume_training, args):
     conf.teacher_net_mode = None
     if len(net_info.split('-')) > 2 and 'teacher' in net_info.split('-')[-1]:
         conf.teacher_net_mode = net_info.split('-')[-1].replace('teacher', '')
-    conf.teacher_model_path = '/media/hwt/492c0a80-02ce-45ac-9297-63ce30dfdd81/home/minivision/Project/pytorch_models/FaceRecognition/snapshot/ArcFace95to5/ArcFace95to5-P9-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNet36-d512/2019-03-17-16-41_ArcFace95to5-P9-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNet36-d512_model_iter-140000_Bus-0.6695.pth'
+    # conf.teacher_model_path = '/media/hwt/492c0a80-02ce-45ac-9297-63ce30dfdd81/home/minivision/Project/pytorch_models/FaceRecognition/snapshot/ArcFace95to5/ArcFace95to5-P9-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNet36-d512/2019-03-17-16-41_ArcFace95to5-P9-b0.4s40_fc_0.35_112x96_del-LAN-DHUA-Crop-Kd1-2-TYLG-NL-GE8_FaceNet36-d512_model_iter-140000_Bus-0.6695.pth'
+    conf.teacher_model_path = None
 
-
-    if conf.teacher_model_path != None:
+    if conf.teacher_model_path != None and conf.teacher_net_mode!=None:
         teacher_net_mode = conf.teacher_model_path.split('/')[-1].split('_model')[0].split('_')[-1].split('-')[0]
         assert teacher_net_mode == conf.teacher_net_mode
-    teacher_file_name = conf.teacher_model_path.split('/')[-1]
-    t_loss_info = teacher_file_name.split('_')[1]
-    t_loss_type = t_loss_info.split('-')[0]
-    # set ArcFace loss param  bias, scale_value
-    sphere_param_part = t_loss_info.split('-')[-1]
-    b_index = sphere_param_part.find('b')
-    s_index = sphere_param_part.find('s')
-    bias = float(sphere_param_part[b_index + 1:s_index])
-    scale_value = float(sphere_param_part[s_index + 1:])
-    conf.teacher_bias = bias
-    conf.teacher_scale = scale_value
-    conf.teacher_loss_type = t_loss_type
+        teacher_file_name = conf.teacher_model_path.split('/')[-1]
+        t_loss_info = teacher_file_name.split('_')[1]
+        t_loss_type = t_loss_info.split('-')[0]
+        # set ArcFace loss param  bias, scale_value
+        sphere_param_part = t_loss_info.split('-')[-1]
+        b_index = sphere_param_part.find('b')
+        s_index = sphere_param_part.find('s')
+        bias = float(sphere_param_part[b_index + 1:s_index])
+        scale_value = float(sphere_param_part[s_index + 1:])
+        conf.teacher_bias = bias
+        conf.teacher_scale = scale_value
+        conf.teacher_loss_type = t_loss_type
     if net_info.find('-k-') >=0:
         kernel_part = net_info.split('-k-')[-1]
         kernel = (int(kernel_part.split('-')[0]), int(kernel_part.split('-')[1]))

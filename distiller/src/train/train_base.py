@@ -52,9 +52,9 @@ class TrainBase():
             self.model_board = model_map[self.conf.net_mode](self.conf.embedding_size, height, width)
 
         elif self.conf.net_mode.find("ResNet") >=0:
-            assert self.conf.input_size[0] == self.conf.input_size[1]
-            self.model = model_map[self.conf.net_mode](self.conf.input_size[0]).to(self.conf.device)
-            self.model_board = model_map[self.conf.net_mode](self.conf.input_size[0])
+            # assert self.conf.input_size[0] == self.conf.input_size[1]
+            self.model = model_map[self.conf.net_mode]((self.conf.input_size[0],self.conf.input_size[1])).to(self.conf.device)
+            self.model_board = model_map[self.conf.net_mode]((self.conf.input_size[0],self.conf.input_size[1]))
         elif self.conf.net_mode.find("DenseNet") >=0:
             self.model = model_map[self.conf.net_mode](input_size =self.conf.input_size,
                                                        bn_size=self.conf.bn_size, drop_rate=self.conf.drop_rate,
